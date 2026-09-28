@@ -25,7 +25,7 @@
       <section class="hero">
         <p class="eyebrow">YOUR LIBRARY</p>
         <h1>All your music.<br><span>In one place.</span></h1>
-        <p class="hero-copy">Add MP3 files to <code>assets/music/</code> in your repository. The site will list them automatically.</p>
+        <p class="hero-copy">Your music library is loaded from <code>tracks.json</code>. Add your MP3 to <code>assets/music/</code> and add it to that file.</p>
       </section>
 
       <section class="library" aria-label="Music library">
@@ -67,8 +67,39 @@
       <div class="volume-wrap">
         <span aria-hidden="true">🔊</span>
         <input id="volumeBar" type="range" min="0" max="1" value="0.8" step="0.01" aria-label="Volume">
+        <button class="settings-btn" id="settingsBtn" aria-label="Open audio settings" title="Audio settings">⚙</button>
       </div>
     </footer>
+
+    <aside class="settings-panel" id="settingsPanel" aria-label="Audio settings" aria-hidden="true">
+      <div class="settings-header">
+        <div>
+          <strong>Audio settings</strong>
+          <span>Shape the sound to your taste</span>
+        </div>
+        <button class="settings-close" id="settingsClose" aria-label="Close audio settings">×</button>
+      </div>
+
+      <div class="preset-row">
+        <button class="preset active" data-preset="flat">Flat</button>
+        <button class="preset" data-preset="bass">Bass Boost</button>
+        <button class="preset" data-preset="boost">Loud</button>
+        <button class="preset" data-preset="reset">Reset</button>
+      </div>
+
+      <div class="setting-row bass-row">
+        <div class="setting-label"><span>Bass boost</span><output id="bassValue">0 dB</output></div>
+        <input id="bassBoost" type="range" min="0" max="12" value="0" step="1" aria-label="Bass boost">
+      </div>
+
+      <div class="eq-grid">
+        <div class="eq-band"><span>60 Hz</span><input class="eq-slider" data-band="0" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
+        <div class="eq-band"><span>230 Hz</span><input class="eq-slider" data-band="1" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
+        <div class="eq-band"><span>910 Hz</span><input class="eq-slider" data-band="2" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
+        <div class="eq-band"><span>3.6 kHz</span><input class="eq-slider" data-band="3" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
+        <div class="eq-band"><span>14 kHz</span><input class="eq-slider" data-band="4" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
+      </div>
+    </aside>
   </div>
 
   <audio id="audio" preload="metadata"></audio>

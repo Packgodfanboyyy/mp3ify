@@ -5,9 +5,10 @@ A Spotify-style, **static** personal music website for GitHub Pages, Render Stat
 ## Add music
 
 1. Put your `.mp3` files in `assets/music/`.
-2. Commit and push to GitHub.
-3. The included GitHub Action automatically regenerates `tracks.json`.
-4. Your website will show the new tracks after the site redeploys.
+2. Add an entry for each file to `tracks.json`, for example:
+   `{ "title": "My Song", "url": "assets/music/My Song.mp3" }`
+3. Commit and push to GitHub.
+4. Redeploy the site.
 
 ### Titles
 
