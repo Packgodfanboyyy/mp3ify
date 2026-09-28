@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Music</title>
+  <meta name="description" content="A personal static MP3 library.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">♪</div>
+        <div>
+          <strong>My Music</strong>
+          <span>Personal library</span>
+        </div>
+      </div>
+      <div class="track-count" id="trackCount">0 tracks</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">YOUR LIBRARY</p>
+        <h1>All your music.<br><span>In one place.</span></h1>
+        <p class="hero-copy">Add MP3 files to <code>assets/music/</code> in your repository. The site will list them automatically.</p>
+      </section>
+
+      <section class="library" aria-label="Music library">
+        <div class="section-heading">
+          <h2>Tracks</h2>
+          <div class="library-line"></div>
+        </div>
+        <div id="emptyState" class="empty-state" hidden>
+          <div class="empty-icon">♪</div>
+          <h3>No tracks yet</h3>
+          <p>Put an MP3 in <code>assets/music/</code> and push it to GitHub.</p>
+        </div>
+        <div id="trackList" class="track-list"></div>
+      </section>
+    </main>
+
+    <footer class="player" id="player" aria-label="Audio player">
+      <div class="now-playing">
+        <div class="cover small" id="playerCover">♪</div>
+        <div class="now-text">
+          <strong id="playerTitle">Select a track</strong>
+          <span id="playerStatus">Nothing playing</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="transport">
+          <button class="control-btn" id="prevBtn" aria-label="Previous track" title="Previous">⏮</button>
+          <button class="play-btn" id="playBtn" aria-label="Play" title="Play">▶</button>
+          <button class="control-btn" id="nextBtn" aria-label="Next track" title="Next">⏭</button>
+        </div>
+        <div class="timeline">
+          <span id="currentTime">0:00</span>
+          <input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" aria-label="Track position">
+          <span id="duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="volume-wrap">
+        <span aria-hidden="true">🔊</span>
+        <input id="volumeBar" type="range" min="0" max="1" value="0.8" step="0.01" aria-label="Volume">
+      </div>
+    </footer>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
