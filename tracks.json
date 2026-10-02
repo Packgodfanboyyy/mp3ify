@@ -16,7 +16,7 @@
     "url": "assets/music/burp.mp3"
   },
   {
-    "title": "mama's boyfriend(melly)",
+    "title": "mama's boyfriend (melly)",
     "url": "assets/music/mamaBF.mp3"
   },
   {
@@ -24,7 +24,7 @@
     "url": "assets/music/poke.mp3"
   },
   {
-    "title": " fassive mart",
+    "title": "fassive mart",
     "url": "assets/music/Sharpfart.mp3"
   },
   {
@@ -41,6 +41,6 @@
   },
   {
     "title": "test",
-    "utl": "assets/music/frog.m4a"
+    "url": "assets/music/frog.m4a"
   }
 ]

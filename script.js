@@ -17,288 +17,173 @@ const settingsPanel = document.getElementById("settingsPanel");
 const settingsClose = document.getElementById("settingsClose");
 const bassBoost = document.getElementById("bassBoost");
 const bassValue = document.getElementById("bassValue");
+const playbackSlider = document.getElementById("playbackSlider");
+const playbackValue = document.getElementById("playbackValue");
+const eqValue = document.getElementById("eqValue");
 const eqSliders = [...document.querySelectorAll(".eq-slider")];
 const presets = [...document.querySelectorAll(".preset")];
 
-let audioContext = null;
-let sourceNode = null;
-let bassFilter = null;
-let eqFilters = [];
-let masterGain = null;
+let audioContext = null, sourceNode = null, bassFilter = null, eqFilters = [], masterGain = null;
 let audioGraphReady = false;
 const EQ_FREQUENCIES = [60, 230, 910, 3600, 14000];
-const defaultSettings = { bass: 0, eq: [0, 0, 0, 0, 0] };
-
-let tracks = [];
-let currentIndex = -1;
+const defaultSettings = { bass: 0, eq: [0,0,0,0,0], playback: 100 };
+let tracks = [], currentIndex = -1;
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return "0:00";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60).toString().padStart(2, "0");
-  return `${mins}:${secs}`;
+  return `${Math.floor(seconds/60)}:${Math.floor(seconds%60).toString().padStart(2,"0")}`;
 }
-
 function titleFromPath(path) {
   const filename = decodeURIComponent(path.split("/").pop() || "");
-  return filename.replace(/\.[^/.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim() || "Untitled";
+  return filename.replace(/\.[^/.]+$/,"").replace(/[_-]+/g," ").replace(/\s+/g," ").trim() || "Untitled";
 }
-
+function mediaType(url) {
+  return /\.m4a($|\?)/i.test(url) ? "M4A" : "MP3";
+}
 function render() {
   trackList.innerHTML = "";
   trackCount.textContent = `${tracks.length} ${tracks.length === 1 ? "track" : "tracks"}`;
   emptyState.hidden = tracks.length !== 0;
-
-  tracks.forEach((track, index) => {
-    const row = document.createElement("article");
-    row.className = "track";
-    row.dataset.index = index;
-
-    row.innerHTML = `
-      <div class="cover" aria-hidden="true">♪</div>
-      <div class="track-info">
-        <span class="track-title"></span>
-        <span class="track-subtitle">MP3</span>
-      </div>
-      <span class="track-time" data-time>—</span>
-      <button class="row-play" aria-label="Play track">▶</button>
-    `;
-
-    row.querySelector(".track-title").textContent = track.title;
-    row.querySelector(".row-play").addEventListener("click", () => selectTrack(index, true));
-    row.addEventListener("dblclick", () => selectTrack(index, true));
+  tracks.forEach((track,index) => {
+    const row=document.createElement("article");
+    row.className="track"; row.dataset.index=index;
+    row.innerHTML=`<div class="cover" aria-hidden="true">♪</div>
+      <div class="track-info"><span class="track-title"></span><span class="track-subtitle"></span></div>
+      <span class="track-time" data-time>—</span><button class="row-play" aria-label="Play track">▶</button>`;
+    row.querySelector(".track-title").textContent=track.title;
+    row.querySelector(".track-subtitle").textContent=mediaType(track.url);
+    row.querySelector(".row-play").addEventListener("click",()=>selectTrack(index,true));
+    row.addEventListener("dblclick",()=>selectTrack(index,true));
     trackList.appendChild(row);
   });
 }
-
 function updateRows() {
-  [...trackList.children].forEach((row, index) => {
-    const active = index === currentIndex;
-    row.classList.toggle("active", active);
-    const button = row.querySelector(".row-play");
-    button.textContent = active && !audio.paused ? "❚❚" : "▶";
-    button.setAttribute("aria-label", active && !audio.paused ? "Pause track" : "Play track");
+  [...trackList.children].forEach((row,index)=>{
+    const active=index===currentIndex;
+    row.classList.toggle("active",active);
+    const b=row.querySelector(".row-play");
+    b.textContent=active&&!audio.paused?"❚❚":"▶";
+    b.setAttribute("aria-label",active&&!audio.paused?"Pause track":"Play track");
   });
 }
-
-function selectTrack(index, autoplay = false) {
-  if (!tracks[index]) return;
-  currentIndex = index;
-  audio.src = tracks[index].url;
-  audio.load();
-  playerTitle.textContent = tracks[index].title;
-  playerStatus.textContent = "Ready to play";
-  playerCover.textContent = "♪";
-  seekBar.value = 0;
-  currentTime.textContent = "0:00";
-  duration.textContent = "0:00";
-  updateRows();
-  if (autoplay) {
-    ensureAudioGraph();
-    if (audioContext.state === "suspended") audioContext.resume();
-    audio.play().catch(() => {});
-  }
+function selectTrack(index,autoplay=false) {
+  if(!tracks[index]) return;
+  currentIndex=index; audio.src=tracks[index].url; audio.load();
+  playerTitle.textContent=tracks[index].title; playerStatus.textContent="Ready to play";
+  playerCover.textContent="♪"; seekBar.value=0; currentTime.textContent="0:00"; duration.textContent="0:00";
+  updateRows(); updateMediaSession();
+  if(autoplay) startPlayback();
 }
-
-
 function ensureAudioGraph() {
-  if (audioGraphReady) return;
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  sourceNode = audioContext.createMediaElementSource(audio);
-  bassFilter = audioContext.createBiquadFilter();
-  bassFilter.type = "lowshelf";
-  bassFilter.frequency.value = 100;
-
-  eqFilters = EQ_FREQUENCIES.map((frequency, index) => {
-    const filter = audioContext.createBiquadFilter();
-    filter.type = index === 0 || index === 4 ? "lowshelf" : "peaking";
-    if (index === 4) filter.type = "highshelf";
-    filter.frequency.value = frequency;
-    filter.Q.value = 0.9;
-    return filter;
+  if(audioGraphReady) return;
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C) return;
+  audioContext=new C();
+  sourceNode=audioContext.createMediaElementSource(audio);
+  bassFilter=audioContext.createBiquadFilter(); bassFilter.type="lowshelf"; bassFilter.frequency.value=100;
+  eqFilters=EQ_FREQUENCIES.map((frequency,index)=>{
+    const f=audioContext.createBiquadFilter();
+    f.type=index===0?"lowshelf":index===4?"highshelf":"peaking";
+    f.frequency.value=frequency; f.Q.value=.9; return f;
   });
-
-  masterGain = audioContext.createGain();
-  sourceNode.connect(bassFilter);
-  let node = bassFilter;
-  eqFilters.forEach(filter => {
-    node.connect(filter);
-    node = filter;
-  });
-  node.connect(masterGain);
-  masterGain.connect(audioContext.destination);
-  audioGraphReady = true;
-  applyAudioSettings();
+  masterGain=audioContext.createGain();
+  let node=sourceNode; node.connect(bassFilter); node=bassFilter;
+  eqFilters.forEach(f=>{node.connect(f);node=f;});
+  node.connect(masterGain); masterGain.connect(audioContext.destination);
+  audioGraphReady=true; applyAudioSettings();
 }
-
-function getAudioSettings() {
+async function resumeAudioContext() {
+  ensureAudioGraph();
+  if(audioContext?.state==="suspended") { try { await audioContext.resume(); } catch(_) {} }
+}
+function getSettings() {
   try {
-    const saved = JSON.parse(localStorage.getItem("mp3ify-audio-settings"));
-    if (saved && Array.isArray(saved.eq) && saved.eq.length === 5) return saved;
-  } catch (_) {}
-  return { ...defaultSettings, eq: [...defaultSettings.eq] };
+    const s=JSON.parse(localStorage.getItem("mp3ify-audio-settings"));
+    if(s && Array.isArray(s.eq) && s.eq.length===5) return {...defaultSettings,...s};
+  } catch(_) {}
+  return {...defaultSettings,eq:[...defaultSettings.eq]};
 }
-
-function saveAudioSettings() {
-  const settings = {
-    bass: Number(bassBoost.value),
-    eq: eqSliders.map(slider => Number(slider.value))
-  };
-  localStorage.setItem("mp3ify-audio-settings", JSON.stringify(settings));
+function saveSettings() {
+  const s={bass:Number(bassBoost.value),eq:eqSliders.map(x=>Number(x.value)),playback:Number(playbackSlider.value)};
+  localStorage.setItem("mp3ify-audio-settings",JSON.stringify(s));
 }
-
 function applyAudioSettings() {
-  if (!audioGraphReady) return;
-  bassFilter.gain.value = Number(bassBoost.value);
-  eqSliders.forEach((slider, index) => {
-    eqFilters[index].gain.value = Number(slider.value);
-    slider.nextElementSibling.value = `${slider.value > 0 ? "+" : ""}${slider.value} dB`;
+  const settings=getSettings();
+  if(audioGraphReady) {
+    bassFilter.gain.value=Number(bassBoost.value);
+    eqSliders.forEach((s,i)=>eqFilters[i].gain.value=Number(s.value));
+    masterGain.gain.value=1;
+  }
+  bassValue.value=`${bassBoost.value} dB`;
+  const activeEq=eqSliders.some(s=>Number(s.value)!==0);
+  eqValue.value=activeEq?"Custom":"Flat";
+  const rate=Number(playbackSlider.value)/100;
+  audio.playbackRate=rate;
+  playbackValue.value=`${playbackSlider.value}%`;
+}
+function setSettings(s) {
+  bassBoost.value=s.bass??0;
+  eqSliders.forEach((x,i)=>x.value=s.eq?.[i]??0);
+  playbackSlider.value=s.playback??100;
+  applyAudioSettings(); saveSettings();
+}
+function loadSettings(){setSettings(getSettings());}
+async function startPlayback() {
+  await resumeAudioContext();
+  try { await audio.play(); } catch(e) { playerStatus.textContent="Tap play to start"; }
+}
+function updateMediaSession() {
+  if(!("mediaSession" in navigator)) return;
+  navigator.mediaSession.metadata=new MediaMetadata({
+    title:tracks[currentIndex]?.title||"My Music", artist:"My Music", album:"Personal library"
   });
-  bassValue.value = `${bassBoost.value} dB`;
-  if (masterGain) masterGain.gain.value = 1;
 }
-
-function setAudioSettings(settings) {
-  bassBoost.value = settings.bass ?? 0;
-  eqSliders.forEach((slider, index) => {
-    slider.value = settings.eq?.[index] ?? 0;
-  });
-  applyAudioSettings();
-  saveAudioSettings();
+if("mediaSession" in navigator) {
+  [["play",startPlayback],["pause",()=>audio.pause()],
+   ["previoustrack",()=>prevBtn.click()],["nexttrack",()=>nextBtn.click()],
+   ["seekbackward",()=>audio.currentTime=Math.max(0,audio.currentTime-10)],
+   ["seekforward",()=>audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10)]]
+   .forEach(([action,handler])=>{try{navigator.mediaSession.setActionHandler(action,handler)}catch(_){}});
 }
-
-function loadAudioSettings() {
-  setAudioSettings(getAudioSettings());
-  const isFlat = Number(bassBoost.value) === 0 && eqSliders.every(slider => Number(slider.value) === 0);
-  presets.forEach(button => button.classList.toggle("active", button.dataset.preset === (isFlat ? "flat" : "")));
-}
-
-settingsBtn.addEventListener("click", () => {
+settingsBtn.addEventListener("click",()=>{
   settingsPanel.classList.toggle("open");
-  settingsPanel.setAttribute("aria-hidden", String(!settingsPanel.classList.contains("open")));
+  settingsPanel.setAttribute("aria-hidden",String(!settingsPanel.classList.contains("open")));
 });
-
-settingsClose.addEventListener("click", () => {
-  settingsPanel.classList.remove("open");
-  settingsPanel.setAttribute("aria-hidden", "true");
-});
-
-bassBoost.addEventListener("input", () => {
-  ensureAudioGraph();
-  applyAudioSettings();
-  saveAudioSettings();
-  presets.forEach(button => button.classList.remove("active"));
-});
-
-eqSliders.forEach(slider => {
-  slider.addEventListener("input", () => {
-    ensureAudioGraph();
-    applyAudioSettings();
-    saveAudioSettings();
-    presets.forEach(button => button.classList.remove("active"));
-  });
-});
-
-presets.forEach(button => {
-  button.addEventListener("click", () => {
-    const preset = button.dataset.preset;
-    if (preset === "flat" || preset === "reset") {
-      setAudioSettings(defaultSettings);
-    } else if (preset === "bass") {
-      setAudioSettings({ bass: 8, eq: [6, 3, 0, 0, -1] });
-    } else if (preset === "boost") {
-      setAudioSettings({ bass: 4, eq: [3, 2, 1, 2, 3] });
-    }
-    presets.forEach(item => item.classList.toggle("active", item === button));
-  });
-});
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    settingsPanel.classList.remove("open");
-    settingsPanel.setAttribute("aria-hidden", "true");
+settingsClose.addEventListener("click",()=>{settingsPanel.classList.remove("open");settingsPanel.setAttribute("aria-hidden","true")});
+document.addEventListener("pointerdown",e=>{
+  if(settingsPanel.classList.contains("open") && !settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) {
+    settingsPanel.classList.remove("open"); settingsPanel.setAttribute("aria-hidden","true");
   }
 });
-
-playBtn.addEventListener("click", () => {
-  if (currentIndex < 0 && tracks.length) selectTrack(0);
-  if (!audio.src) return;
-  ensureAudioGraph();
-  if (audioContext.state === "suspended") audioContext.resume();
-  if (audio.paused) audio.play().catch(() => {});
-  else audio.pause();
-});
-
-prevBtn.addEventListener("click", () => {
-  if (!tracks.length) return;
-  const index = currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
-  selectTrack(index, true);
-});
-
-nextBtn.addEventListener("click", () => {
-  if (!tracks.length) return;
-  const index = currentIndex >= tracks.length - 1 ? 0 : currentIndex + 1;
-  selectTrack(index, true);
-});
-
-audio.addEventListener("play", () => {
-  playBtn.textContent = "❚❚";
-  playBtn.setAttribute("aria-label", "Pause");
-  playerStatus.textContent = "Playing";
-  updateRows();
-});
-
-audio.addEventListener("pause", () => {
-  playBtn.textContent = "▶";
-  playBtn.setAttribute("aria-label", "Play");
-  if (currentIndex >= 0) playerStatus.textContent = "Paused";
-  updateRows();
-});
-
-audio.addEventListener("loadedmetadata", () => {
-  duration.textContent = formatTime(audio.duration);
-  const timeEl = trackList.children[currentIndex]?.querySelector("[data-time]");
-  if (timeEl) timeEl.textContent = formatTime(audio.duration);
-});
-
-audio.addEventListener("timeupdate", () => {
-  currentTime.textContent = formatTime(audio.currentTime);
-  seekBar.value = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-});
-
-audio.addEventListener("ended", () => {
-  if (tracks.length) {
-    const next = currentIndex >= tracks.length - 1 ? 0 : currentIndex + 1;
-    selectTrack(next, true);
-  }
-});
-
-seekBar.addEventListener("input", () => {
-  if (audio.duration) audio.currentTime = (Number(seekBar.value) / 100) * audio.duration;
-});
-volumeBar.addEventListener("input", () => audio.volume = Number(volumeBar.value));
-audio.volume = Number(volumeBar.value);
-
-async function loadTracks() {
-  try {
-    const response = await fetch("tracks.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("tracks.json not found");
-    const data = await response.json();
-    tracks = Array.isArray(data) ? data : [];
-    tracks = tracks.map(item => ({
-      title: item.title || titleFromPath(item.url),
-      url: item.url
-    }));
+bassBoost.addEventListener("input",()=>{resumeAudioContext();applyAudioSettings();saveSettings();presets.forEach(b=>b.classList.remove("active"))});
+eqSliders.forEach(s=>s.addEventListener("input",()=>{resumeAudioContext();applyAudioSettings();saveSettings();presets.forEach(b=>b.classList.remove("active"))}));
+playbackSlider.addEventListener("input",()=>{applyAudioSettings();saveSettings()});
+presets.forEach(b=>b.addEventListener("click",()=>{
+  const p=b.dataset.preset;
+  setSettings(p==="bass"?{bass:8,eq:[6,3,0,0,-1],playback:100}:p==="boost"?{bass:4,eq:[3,2,1,2,3],playback:100}:defaultSettings);
+  presets.forEach(x=>x.classList.toggle("active",x===b));
+}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")settingsClose.click()});
+playBtn.addEventListener("click",()=>{if(currentIndex<0&&tracks.length)selectTrack(0);if(audio.src){if(audio.paused)startPlayback();else audio.pause()}});
+prevBtn.addEventListener("click",()=>{if(tracks.length)selectTrack(currentIndex<=0?tracks.length-1:currentIndex-1,true)});
+nextBtn.addEventListener("click",()=>{if(tracks.length)selectTrack(currentIndex>=tracks.length-1?0:currentIndex+1,true)});
+audio.addEventListener("play",()=>{playBtn.textContent="❚❚";playBtn.setAttribute("aria-label","Pause");playerStatus.textContent="Playing";updateRows();updateMediaSession()});
+audio.addEventListener("pause",()=>{playBtn.textContent="▶";playBtn.setAttribute("aria-label","Play");if(currentIndex>=0)playerStatus.textContent="Paused";updateRows()});
+audio.addEventListener("loadedmetadata",()=>{duration.textContent=formatTime(audio.duration);const t=trackList.children[currentIndex]?.querySelector("[data-time]");if(t)t.textContent=formatTime(audio.duration)});
+audio.addEventListener("timeupdate",()=>{currentTime.textContent=formatTime(audio.currentTime);seekBar.value=audio.duration?(audio.currentTime/audio.duration)*100:0});
+audio.addEventListener("ended",()=>{if(tracks.length)selectTrack(currentIndex>=tracks.length-1?0:currentIndex+1,true)});
+audio.addEventListener("error",()=>{playerStatus.textContent="Could not load this file";});
+seekBar.addEventListener("input",()=>{if(audio.duration)audio.currentTime=Number(seekBar.value)/100*audio.duration});
+volumeBar.addEventListener("input",()=>audio.volume=Number(volumeBar.value));
+audio.volume=Number(volumeBar.value);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible" && !audio.paused) resumeAudioContext();});
+async function loadTracks(){
+  try{
+    const response=await fetch("tracks.json",{cache:"no-store"});
+    if(!response.ok)throw Error("tracks.json not found");
+    const data=await response.json();
+    tracks=(Array.isArray(data)?data:[]).filter(x=>x&&x.url).map(x=>({title:x.title||titleFromPath(x.url),url:x.url}));
     render();
-  } catch (error) {
-    console.error(error);
-    tracks = [];
-    render();
-  }
+  }catch(error){console.error(error);tracks=[];render()}
 }
-
-loadAudioSettings();
-loadTracks();
+loadSettings(); loadTracks();

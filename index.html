@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>My Music</title>
-  <meta name="description" content="A personal static MP3 library.">
+  <meta name="description" content="A personal static music library.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -74,35 +74,47 @@
     <aside class="settings-panel" id="settingsPanel" aria-label="Audio settings" aria-hidden="true">
       <div class="settings-header">
         <div>
-          <strong>Audio settings</strong>
-          <span>Shape the sound to your taste</span>
+          <strong>Audio</strong>
+          <span>EQ, bass, and playback</span>
         </div>
         <button class="settings-close" id="settingsClose" aria-label="Close audio settings">×</button>
       </div>
 
       <div class="preset-row">
         <button class="preset active" data-preset="flat">Flat</button>
-        <button class="preset" data-preset="bass">Bass Boost</button>
+        <button class="preset" data-preset="bass">Bass</button>
         <button class="preset" data-preset="boost">Loud</button>
         <button class="preset" data-preset="reset">Reset</button>
       </div>
 
-      <div class="setting-row bass-row">
+      <section class="setting-section">
         <div class="setting-label"><span>Bass boost</span><output id="bassValue">0 dB</output></div>
         <input id="bassBoost" type="range" min="0" max="12" value="0" step="1" aria-label="Bass boost">
-      </div>
+      </section>
 
-      <div class="eq-grid">
-        <div class="eq-band"><span>60 Hz</span><input class="eq-slider" data-band="0" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
-        <div class="eq-band"><span>230 Hz</span><input class="eq-slider" data-band="1" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
-        <div class="eq-band"><span>910 Hz</span><input class="eq-slider" data-band="2" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
-        <div class="eq-band"><span>3.6 kHz</span><input class="eq-slider" data-band="3" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
-        <div class="eq-band"><span>14 kHz</span><input class="eq-slider" data-band="4" type="range" min="-12" max="12" value="0" step="1" orient="vertical"><output>0</output></div>
-      </div>
+      <section class="setting-section playback-section">
+        <div class="setting-label">
+          <span>Tempo + pitch</span>
+          <output id="playbackValue">100%</output>
+        </div>
+        <input id="playbackSlider" type="range" min="50" max="150" value="100" step="1" aria-label="Tempo and pitch">
+        <div class="range-hints"><span>Slower / lower</span><span>Faster / higher</span></div>
+      </section>
+
+      <section class="setting-section">
+        <div class="setting-label"><span>Equalizer</span><output id="eqValue">Flat</output></div>
+        <div class="eq-grid">
+          <div class="eq-band"><span>60</span><input class="eq-slider" data-band="0" type="range" min="-12" max="12" value="0" step="1" aria-label="60 Hz EQ"><output>0</output></div>
+          <div class="eq-band"><span>230</span><input class="eq-slider" data-band="1" type="range" min="-12" max="12" value="0" step="1" aria-label="230 Hz EQ"><output>0</output></div>
+          <div class="eq-band"><span>910</span><input class="eq-slider" data-band="2" type="range" min="-12" max="12" value="0" step="1" aria-label="910 Hz EQ"><output>0</output></div>
+          <div class="eq-band"><span>3.6k</span><input class="eq-slider" data-band="3" type="range" min="-12" max="12" value="0" step="1" aria-label="3.6 kHz EQ"><output>0</output></div>
+          <div class="eq-band"><span>14k</span><input class="eq-slider" data-band="4" type="range" min="-12" max="12" value="0" step="1" aria-label="14 kHz EQ"><output>0</output></div>
+        </div>
+      </section>
     </aside>
   </div>
 
-  <audio id="audio" preload="metadata"></audio>
+  <audio id="audio" preload="auto" playsinline webkit-playsinline></audio>
   <script src="script.js"></script>
 </body>
 </html>

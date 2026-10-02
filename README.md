@@ -47,3 +47,7 @@ Select your branch and the repository root (`/`).
 - The browser plays the files locally in the visitor's browser.
 - The GitHub repository is therefore also the music storage.
 - Very large audio libraries can make a Git repository unwieldy. Git LFS or external object storage may be preferable for large collections.
+
+
+### Playback controls
+The player includes EQ, bass boost, linked tempo/pitch, Media Session controls for supported mobile browsers, and responsive iPhone/iPad controls. iOS may still suspend web audio in some system situations.

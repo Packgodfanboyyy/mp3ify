@@ -272,3 +272,73 @@ input[type="range"] {
   }
   .settings-btn { width: 32px; height: 32px; }
 }
+
+
+/* Mobile-first audio controls */
+.settings-panel {
+  width: min(430px, calc(100vw - 24px));
+  max-height: min(76vh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px;
+}
+.setting-section { margin: 0 0 20px; }
+.setting-section:last-child { margin-bottom: 0; }
+.playback-section {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.range-hints {
+  display:flex; justify-content:space-between; margin-top:7px;
+  color:var(--muted); font-size:9px;
+}
+.eq-grid { height: 155px; }
+.eq-band input { height: 100px; }
+
+@media (max-width: 760px) {
+  html { overscroll-behavior-y: none; }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .topbar { height: 62px; padding: 0 16px; }
+  main { width: calc(100vw - 28px); }
+  .hero { padding: 48px 0 38px; }
+  h1 { font-size: clamp(43px, 14vw, 70px); }
+  .hero-copy { margin-top: 18px; font-size: 13px; }
+  .track { grid-template-columns: 44px minmax(0,1fr) 40px; gap: 10px; padding: 10px; border-radius: 12px; }
+  .track .cover { width:44px; height:44px; }
+  .row-play { width:40px; height:40px; }
+  .player {
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 7px 10px;
+    padding: 9px 14px calc(9px + env(safe-area-inset-bottom));
+    min-height: 118px;
+  }
+  .now-playing { grid-column:1; grid-row:1; }
+  .volume-wrap { grid-column:2; grid-row:1; }
+  .volume-wrap input { display:none; }
+  .controls { grid-column:1 / -1; grid-row:2; }
+  .transport { margin-bottom:4px; gap:22px; }
+  .control-btn { font-size:18px; }
+  .play-btn { width:40px; height:40px; }
+  .timeline { grid-template-columns: 34px minmax(0,1fr) 34px; gap:7px; }
+  .app-shell { padding-bottom: 142px; }
+  .settings-panel {
+    left: 12px; right: 12px; bottom: calc(132px + env(safe-area-inset-bottom));
+    width:auto; max-height: min(70vh, 560px);
+    border-radius: 18px;
+    padding: 16px;
+  }
+  .settings-header { margin-bottom:14px; }
+  .preset-row { gap:5px; margin-bottom:15px; }
+  .preset { min-height:40px; }
+  .setting-section { margin-bottom:16px; }
+  .eq-grid { height: 145px; }
+  .eq-band input { height:90px; }
+}
+@media (max-width: 380px) {
+  .brand span, .track-count { display:none; }
+  .transport { gap:18px; }
+  .settings-panel { left:8px; right:8px; }
+}
