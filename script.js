@@ -28,6 +28,7 @@ let audioGraphReady = false;
 const EQ_FREQUENCIES = [60, 230, 910, 3600, 14000];
 const defaultSettings = { bass: 0, eq: [0,0,0,0,0], playback: 100 };
 let tracks = [], currentIndex = -1;
+let settingsFrame = 0;
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -118,6 +119,10 @@ function applyAudioSettings() {
   const activeEq=eqSliders.some(s=>Number(s.value)!==0);
   eqValue.value=activeEq?"Custom":"Flat";
   const rate=Number(playbackSlider.value)/100;
+  // Keep pitch linked to tempo. Safari may preserve pitch by default, so explicitly disable it.
+  audio.preservesPitch = false;
+  audio.mozPreservesPitch = false;
+  audio.webkitPreservesPitch = false;
   audio.playbackRate=rate;
   playbackValue.value=`${playbackSlider.value}%`;
 }
@@ -155,9 +160,26 @@ document.addEventListener("pointerdown",e=>{
     settingsPanel.classList.remove("open"); settingsPanel.setAttribute("aria-hidden","true");
   }
 });
-bassBoost.addEventListener("input",()=>{resumeAudioContext();applyAudioSettings();saveSettings();presets.forEach(b=>b.classList.remove("active"))});
-eqSliders.forEach(s=>s.addEventListener("input",()=>{resumeAudioContext();applyAudioSettings();saveSettings();presets.forEach(b=>b.classList.remove("active"))}));
-playbackSlider.addEventListener("input",()=>{applyAudioSettings();saveSettings()});
+bassBoost.addEventListener("input",()=>{
+  // Never resume a paused track just because an audio setting changed.
+  if(audioContext?.state === "running") applyAudioSettings();
+  else { ensureAudioGraph(); applyAudioSettings(); }
+  saveSettings(); presets.forEach(b=>b.classList.remove("active"));
+});
+eqSliders.forEach(s=>s.addEventListener("input",()=>{
+  if(audioContext?.state === "running") applyAudioSettings();
+  else { ensureAudioGraph(); applyAudioSettings(); }
+  saveSettings(); presets.forEach(b=>b.classList.remove("active"));
+}));
+playbackSlider.addEventListener("input",()=>{
+  // Throttle rapid touch/mouse events to one playbackRate change per animation frame.
+  if(settingsFrame) return;
+  settingsFrame=requestAnimationFrame(()=>{
+    settingsFrame=0;
+    applyAudioSettings();
+    saveSettings();
+  });
+});
 presets.forEach(b=>b.addEventListener("click",()=>{
   const p=b.dataset.preset;
   setSettings(p==="bass"?{bass:8,eq:[6,3,0,0,-1],playback:100}:p==="boost"?{bass:4,eq:[3,2,1,2,3],playback:100}:defaultSettings);
@@ -176,7 +198,15 @@ audio.addEventListener("error",()=>{playerStatus.textContent="Could not load thi
 seekBar.addEventListener("input",()=>{if(audio.duration)audio.currentTime=Number(seekBar.value)/100*audio.duration});
 volumeBar.addEventListener("input",()=>audio.volume=Number(volumeBar.value));
 audio.volume=Number(volumeBar.value);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible" && !audio.paused) resumeAudioContext();});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible" && !audio.paused) resumeAudioContext();
+});
+
+// Keep the current position stable when Safari recalculates media timing after a rate change.
+audio.addEventListener("ratechange",()=>{
+  if(!Number.isFinite(audio.currentTime) || !Number.isFinite(audio.duration)) return;
+  if(audio.currentTime > audio.duration) audio.currentTime=Math.max(0,audio.duration-0.01);
+});
 async function loadTracks(){
   try{
     const response=await fetch("tracks.json",{cache:"no-store"});
